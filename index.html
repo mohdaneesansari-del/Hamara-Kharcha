@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#145c49"><meta name="description" content="Do logon ka shared kharcha aur 50-50 hisaab">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png">
+<title>Hamara Kharcha</title>
+<style>
+:root{--green:#145c49;--pale:#e8f3ed;--bg:#f4f7f5;--ink:#18231f;--muted:#65736c;--line:#e0e8e3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px system-ui,-apple-system,sans-serif}
+main{max-width:560px;margin:auto;padding:18px 15px 40px}.brand{display:flex;align-items:center;gap:12px;margin:8px 0 20px}.logo{width:48px;height:48px;border-radius:15px;background:var(--green);color:white;display:grid;place-items:center;font-size:25px}.brand h1{font-size:23px;margin:0}.sub{color:var(--muted);font-size:13px}
+.card{background:white;border:1px solid var(--line);border-radius:18px;padding:16px;margin:13px 0;box-shadow:0 2px 8px #18382a08}
+h2{font-size:17px;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:var(--pale);border-radius:14px;padding:13px}.stat small{display:block;color:var(--muted);font-size:12px}.stat strong{font-size:21px}
+input,select,button{font:inherit}input,select{width:100%;padding:12px;border:1px solid #ccd8d1;border-radius:11px;background:white;margin:5px 0 10px;color:var(--ink)}
+button{border:0;border-radius:12px;padding:12px 14px;background:var(--green);color:white;font-weight:650;cursor:pointer}.secondary{background:#edf3ef;color:var(--green)}.danger{background:#fff0ee;color:#a52b22}.full{width:100%}
+label{font-size:13px;color:var(--muted)}.balance{background:#e8f3ed;border-radius:14px;padding:15px;margin-top:12px}.balance strong{display:block;font-size:20px;margin-top:5px}.entry{display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding:12px 0}.entry:first-child{border-top:0}.entry .info{flex:1;min-width:0}.entry small{display:block;color:var(--muted);font-size:12px}.entry b{white-space:nowrap}.entry button{padding:7px 10px}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}.empty{text-align:center;color:var(--muted);padding:18px 4px;font-size:14px}
+</style></head>
+<body><main>
+<header class="brand"><div class="logo">₹</div><div><h1>Hamara Kharcha</h1><div class="sub">Do log · 50–50 hisaab · Offline bhi chalega</div></div></header>
+<section class="card">
+<h2>Dono ke naam</h2><div class="grid"><div><label>Pehla person</label><input id="nameA" maxlength="30" value="Aap"></div><div><label>Doosra person</label><input id="nameB" maxlength="30" value="Dost"></div></div>
+<button class="secondary full" id="saveNames">Naam save karein</button>
+</section>
+<section class="card">
+<h2>Ab tak ka hisaab</h2>
+<div class="grid"><div class="stat"><small id="paidALabel">Aap ne diya</small><strong id="paidA">₹0</strong></div><div class="stat"><small id="paidBLabel">Dost ne diya</small><strong id="paidB">₹0</strong></div></div>
+<div class="stat" style="margin-top:10px"><small>Total kharcha</small><strong id="total">₹0</strong><small id="share" style="margin-top:4px">Har ek ka hissa: ₹0</small></div>
+<div class="balance"><small>Settlement – ab kisko kitna dena hai?</small><strong id="settlement">Dono ka hisaab barabar hai</strong></div>
+</section>
+<section class="card">
+<h2>Naya kharcha add karein</h2>
+<label>Kitna kharcha hua? (₹)</label><input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Jaise 250">
+<label>Kisne kharcha kiya?</label><select id="payer"><option value="0">Aap</option><option value="1">Dost</option></select>
+<label>Kis cheez ka kharcha? (optional)</label><input id="note" maxlength="70" placeholder="Jaise ration, khana, petrol">
+<button class="full" id="add">+ Kharcha save karein</button>
+</section>
+<section class="card"><h2>Kharchon ki history</h2><div id="history"></div>
+<div class="actions"><button class="secondary" id="export">Backup download</button><button class="danger" id="clear">Saara hisaab clear</button></div>
+</section>
+<p class="sub" style="text-align:center">Aapka data isi mobile ke browser mein save hota hai. Browser ka data clear ya app uninstall karne se pehle backup lein.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let data={a:"Aap",b:"Dost",items:[]};
+try{data={...data,...JSON.parse(localStorage.getItem("hk-data")||"{}")};if(!Array.isArray(data.items))data.items=[];}catch(e){}
+function save(){localStorage.setItem("hk-data",JSON.stringify(data));render()}
+function money(n){return "₹"+Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function render(){
+$("nameA").value=data.a;$("nameB").value=data.b;
+$("paidALabel").textContent=data.a+" ne diya";$("paidBLabel").textContent=data.b+" ne diya";
+$("payer").options[0].text=data.a;$("payer").options[1].text=data.b;
+let a=data.items.filter(x=>x.p===0).reduce((s,x)=>s+x.v,0),b=data.items.filter(x=>x.p===1).reduce((s,x)=>s+x.v,0),t=a+b,d=(a-b)/2;
+$("paidA").textContent=money(a);$("paidB").textContent=money(b);$("total").textContent=money(t);$("share").textContent="Har ek ka hissa: "+money(t/2);
+$("settlement").textContent=Math.abs(d)<.005?"Dono ka hisaab barabar hai":d>0?data.b+" ko "+data.a+" ko "+money(d)+" dene hain":data.a+" ko "+data.b+" ko "+money(-d)+" dene hain";
+let h=$("history");h.innerHTML="";
+if(!data.items.length){h.innerHTML='<div class="empty">Abhi koi kharcha add nahi hua.</div>';return}
+[...data.items].reverse().forEach(x=>{let row=document.createElement("div");row.className="entry";
+let info=document.createElement("div");info.className="info";let title=document.createElement("b");title.textContent=x.note||"Other";let meta=document.createElement("small");meta.textContent=(x.p===0?data.a:data.b)+" · "+x.date;info.append(title,meta);
+let amt=document.createElement("b");amt.textContent=money(x.v);let del=document.createElement("button");del.className="danger";del.textContent="×";del.setAttribute("aria-label","Delete expense");del.onclick=()=>{if(confirm("Is kharche ko delete karein?")){data.items=data.items.filter(z=>z.id!==x.id);save()}};
+row.append(info,amt,del);h.append(row)});
+}
+$("saveNames").onclick=()=>{data.a=$("nameA").value.trim()||"Aap";data.b=$("nameB").value.trim()||"Dost";save();alert("Naam save ho gaye")};
+$("add").onclick=()=>{let v=Number($("amount").value);if(!Number.isFinite(v)||v<=0){alert("Sahi amount likhein");return}
+data.items.push({id:Date.now()+Math.random(),v,p:Number($("payer").value),note:$("note").value.trim()||"Other",date:new Date().toLocaleString("en-IN")});
+$("amount").value="";$("note").value="";save()};
+$("clear").onclick=()=>{if(confirm("Saari entries hamesha ke liye delete kar dein?")){data.items=[];save()}};
+$("export").onclick=()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="hamara-kharcha-backup.json";a.click();URL.revokeObjectURL(url)};
+render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js");
+</script></body></html>
